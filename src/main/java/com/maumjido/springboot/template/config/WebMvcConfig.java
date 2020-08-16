@@ -34,7 +34,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
   @Override
   public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    registry.addResourceHandler("/res/" + Constants.RESOURCE_VERSION + "/**").addResourceLocations("/").setCachePeriod(60 * 60 * 24 * 365);
+    registry.addResourceHandler("/res/" + DefaultConstants.RESOURCE_VERSION + "/**").addResourceLocations("/").setCachePeriod(60 * 60 * 24 * 365);
   }
 
   @Bean

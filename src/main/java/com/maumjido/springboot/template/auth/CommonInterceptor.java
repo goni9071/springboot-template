@@ -23,7 +23,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import com.google.common.collect.Sets;
-import com.maumjido.springboot.template.config.Constants;
+import com.maumjido.springboot.template.config.DefaultConstants;
 import com.maumjido.springboot.template.util.FormatUtil;
 import com.maumjido.springboot.template.util.IfUtil;
 import com.maumjido.springboot.template.util.JsonResult;
@@ -73,7 +73,7 @@ public class CommonInterceptor extends HandlerInterceptorAdapter {
         res.setStatus(403);
         result = false;
       } else {
-        res.sendRedirect(Constants.CONTEXT_PATH + "/acct/login");
+        res.sendRedirect(DefaultConstants.CONTEXT_PATH + "/acct/login");
         result = false;
       }
     }

@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.maumjido.springboot.template.config.Constants;
+import com.maumjido.springboot.template.config.DefaultConstants;
 import com.maumjido.springboot.template.exception.JsonBadRequestException;
 import com.maumjido.springboot.template.exception.MsgException;
 import com.maumjido.springboot.template.util.JsonResult;
@@ -23,7 +23,7 @@ import com.maumjido.springboot.template.util.ValidateUtil;
 @Aspect
 public class ControllerAspect {
   private static Logger logger = LoggerFactory.getLogger(ControllerAspect.class);
-  private static Logger prettyLogger = LoggerFactory.getLogger(Constants.PRETTY_LOGGER_NAME);
+  private static Logger prettyLogger = LoggerFactory.getLogger(DefaultConstants.PRETTY_LOGGER_NAME);
 
   @Around("@within(org.springframework.stereotype.Controller) && (@annotation(org.springframework.web.bind.annotation.RequestMapping)"//
       + " || "//
