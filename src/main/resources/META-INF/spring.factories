@@ -1,3 +1,4 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.maumjido.springboot.config.AopConfig,\
-com.maumjido.springboot.config.WebMvcConfig
+com.maumjido.springboot.template.config.AopConfig,\
+com.maumjido.springboot.template.config.WebMvcConfig,\
+com.maumjido.springboot.template.controller.GlobalExceptionHandler
