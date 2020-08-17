@@ -10,7 +10,7 @@
   </parent>
   <groupId>com.maumjido</groupId>
   <artifactId>springboot-template</artifactId>
-  <version>1.0</version>
+  <version>1.0-SNAPSHOT</version>
   <name>Springboot 기본 설정 템플릿</name>
   <description>Springboot 기본 설정 템플릿( WEB + JSP + MYBATIS )</description>
 
