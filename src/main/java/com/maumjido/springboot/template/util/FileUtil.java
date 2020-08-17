@@ -867,24 +867,22 @@ public class FileUtil {
     return jar;
   }
 
-  public static File write(String contents, String targetFile) {
-    return write(new ByteArrayInputStream(contents.getBytes()), targetFile);
+  public static File write(String contents, File file) {
+    return write(new ByteArrayInputStream(contents.getBytes()), file);
   }
 
-  public static File write(InputStream in, String targetFile) {
+  public static File write(InputStream in, File file) {
     OutputStream out = null;
-    File tFile = null;
     try {
-      tFile = new File(targetFile);
-      out = new FileOutputStream(tFile);
+      out = new FileOutputStream(file);
       int read = 0;
       byte[] buf = new byte[BUFFER_SIZE];
       while ((read = in.read(buf)) != -1)
         out.write(buf, 0, read);
     } catch (FileNotFoundException e) {
-      throw new MsgException("파일을 찾을 수 없습니다.", e);
+      throw new MsgException("파일을 찾을 수 없습니다.", file.getAbsolutePath());
     } catch (IOException e) {
-      throw new MsgException("파일을 쓰는 중에 오류가 발생하였습니다.", e);
+      throw new MsgException("파일을 쓰는 중에 오류가 발생하였습니다.", file.getAbsolutePath() + ":" + e.getMessage());
     } catch (Exception e) {
       throw e;
     } finally {
@@ -905,6 +903,6 @@ public class FileUtil {
       }
     }
 
-    return tFile;
+    return file;
   }
 }
