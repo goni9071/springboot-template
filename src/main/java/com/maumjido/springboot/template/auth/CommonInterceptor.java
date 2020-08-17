@@ -3,10 +3,11 @@ package com.maumjido.springboot.template.auth;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -22,7 +23,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
 import com.maumjido.springboot.template.config.DefaultConstants;
 import com.maumjido.springboot.template.util.FormatUtil;
 import com.maumjido.springboot.template.util.IfUtil;
@@ -30,61 +31,89 @@ import com.maumjido.springboot.template.util.JsonResult;
 import com.maumjido.springboot.template.util.JsonUtil;
 import com.maumjido.springboot.template.util.PrettyLog;
 import com.maumjido.springboot.template.util.RequestUtil;
+import com.maumjido.springboot.template.util.SystemProperties;
 
 public class CommonInterceptor extends HandlerInterceptorAdapter {
 
-  private static Logger prettyLogger = LoggerFactory.getLogger("PRETTY_LOGGER");
+  private static Logger prettyLogger = LoggerFactory.getLogger(DefaultConstants.PRETTY_LOGGER_NAME);
 
-  private static Set<String> loginFree = Sets.newHashSet();
+  private static List<String> loginFreeRegex = Lists.newArrayList();
+  private static List<String> csrfFreeRegex = Lists.newArrayList();
   static {
-    loginFree.add("/acct/login");
-    loginFree.add("/error");
+    String loginFreeRegexList = SystemProperties.getProperty("login.free.regex", "");
+    loginFreeRegex.addAll(Arrays.asList(loginFreeRegexList.split(",")));
+    String csrfFreeRegexList = SystemProperties.getProperty("csrf.free.regex", "");
+    csrfFreeRegex.addAll(Arrays.asList(csrfFreeRegexList.split(",")));
   }
 
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse res, Object handler) throws ServletException, IOException {
     PrettyLog prettyLog = PrettyLog.newInstance(RequestUtil.getRequestURI(request));
-    if (res.getStatus() != 200) {
-      prettyLog.append("STATUS", res.getStatus() + "");
-      prettyLog.append("HEADER", RequestUtil.getHeaderString(request));
-      Object uri = request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-      prettyLog.append("FORWARD_REQUEST_URI", uri);
-      if (String.valueOf(uri).endsWith("js.map")) {
-        prettyLog.ignore();
-      }
-    }
-
-    if (request.getMethod().equals("POST")) {
-      if (!SessionCsrf.getToken(request).equals(RequestUtil.getHeader(request, "X-CSRF-TOKEN")) && !SessionCsrf.getToken(request).equals(request.getParameter("_csrfToken"))) {
-        res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      }
-    }
     boolean result = true;
-    prettyLog.append("LAYER", "CONTROLLER");
-    prettyLog.append("TYPE", isJsonResult(handler) ? "JSON" : "HTML");
+    try {
+      if (res.getStatus() != 200) {
+        prettyLog.append("STATUS", res.getStatus() + "");
+        prettyLog.append("HEADER", RequestUtil.getHeaderString(request));
+        Object uri = request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        prettyLog.append("FORWARD_REQUEST_URI", uri);
+        if (String.valueOf(uri).endsWith("js.map")) {
+          prettyLog.ignore();
+        }
+      }
+      Map<String, String[]> parameterMap = request.getParameterMap();
+      prettyLog.append("PARAM", JsonUtil.toJson(parameterMap));
+      String servletPath = request.getServletPath();
 
-    request.setAttribute("formatUtil", new FormatUtil());
-    request.setAttribute("ifUtil", new IfUtil());
+      if (request.getMethod().equals("POST")) {
+        boolean isCsrfFree = false;
+        for (String regex : csrfFreeRegex) {
+          if (servletPath.matches(regex)) {
+            isCsrfFree = true;
+            break;
+          }
+        }
+        if (!isCsrfFree) {
+          if (!SessionCsrf.getToken(request).equals(RequestUtil.getHeader(request, "X-CSRF-TOKEN")) && !SessionCsrf.getToken(request).equals(request.getParameter("_csrfToken"))) {
+            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            result = false;
+            return false;
+          }
+        }
+      }
+      prettyLog.append("LAYER", "CONTROLLER");
+      prettyLog.append("TYPE", isJsonResult(handler) ? "JSON" : "HTML");
 
-    SessionUser sessionUser = SessionUser.getInstance(request);
-    request.setAttribute("sessionUser", sessionUser);
-    if (!loginFree.contains(request.getServletPath()) && sessionUser == null) {
-      if (isJsonResult(handler)) {
-        res.setStatus(403);
-        result = false;
-      } else {
-        res.sendRedirect(DefaultConstants.CONTEXT_PATH + "/acct/login");
-        result = false;
+      request.setAttribute("formatUtil", new FormatUtil());
+      request.setAttribute("ifUtil", new IfUtil());
+
+      SessionUser sessionUser = SessionUser.getInstance(request);
+      request.setAttribute("sessionUser", sessionUser);
+      boolean isLoginFree = false;
+      for (String regex : loginFreeRegex) {
+        if (servletPath.matches(regex)) {
+          isLoginFree = true;
+          break;
+        }
+      }
+      if (!isLoginFree && sessionUser == null) {
+        if (isJsonResult(handler)) {
+          res.setStatus(403);
+          result = false;
+        } else {
+          res.sendRedirect(DefaultConstants.CONTEXT_PATH + "/acct/login");
+          result = false;
+        }
+      }
+      return result;
+    } finally {
+      if (!result) {
+        prettyLog.stop();
+        String prettyPrint = prettyLog.prettyPrint();
+        if (prettyPrint != null) {
+          prettyLogger.info(prettyPrint);
+        }
       }
     }
-    if (!result) {
-      prettyLog.stop();
-      String prettyPrint = prettyLog.prettyPrint();
-      if (prettyPrint != null) {
-        prettyLogger.info(prettyPrint);
-      }
-    }
-    return result;
   }
 
   @Override
